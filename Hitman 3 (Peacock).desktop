@@ -1,0 +1,6 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Exec=/bin/bash -c 'cd "$(dirname "$0")"; ./start.sh' %k
+Name=Hitman 3 (Peacock)
