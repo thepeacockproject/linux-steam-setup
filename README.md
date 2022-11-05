@@ -11,6 +11,8 @@ Instructions:
 - Copy the `run` file from `/tmp/proton_USERNAME/` into peacock folder
 - Edit `DEF_CMD` in `run` file, replace `Launcher.exe` to `WineLaunch.bat`
 - Click the `Hitman 3 (Peacock)` shortcut to start the game with Peacock
+- Edit Peacock Patcher Server address to `127.0.0.1:3000`
+- Game is ready to play with Peacock
 
 ## Start it from Steam
 
