@@ -1,6 +1,6 @@
 #!/bin/bash
 
-node_version="18.12.1"
+node_version="18.15.0"
 node_url="https://nodejs.org/dist/v$node_version/node-v$node_version-linux-x64.tar.gz"
 
 # Install node
