@@ -1,2 +1,9 @@
-node/*
+node/
 run
+Peacock/
+images/
+logs/
+userdata/
+options.ini
+node-*
+Peacock-*
