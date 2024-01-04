@@ -1,0 +1,9 @@
+[Unit]
+Description=Peacock
+
+[Service]
+# Adjust me to wherever this is (%h here is a shortcut to your home directory)
+ExecStart=%h/linux-steam-setup/start.sh
+
+[Install]
+WantedBy=default.target
