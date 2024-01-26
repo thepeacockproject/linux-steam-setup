@@ -85,9 +85,17 @@ Steam Deck users can access the patcher by pressing the Steam button and navigat
 
 ## Edit Peacock Patcher Server address to `127.0.0.1:3000`
 
-It's not clear that you can directly edit the combo box that says "Peacock Local" but you can, alternatively add an `/etc/hosts` entry for `127.0.0.1    localhost`. If you're likely to switch back and forth between IOI servers and Peacock then you'd be better off setting an entry in `/etc/hosts`.
+It's not clear that you can directly edit the combo box that says "Peacock Local" but you can, type `127.0.0.1:3000` in the combo box then click Re-patch. The Patcher will save this setting and you won't be required to edit it again.
 
-It's important to change this as the default "Peacock Local" expects it to live on port 80. If you'd prefer to do this, modify `start.sh` to remove the `NODE=3000` to default to loading Peacock on port 80.
+It's important to change this as the default "Peacock Local" expects it to live on port 80.
+
+If you have issues on the login screen, check if you have the following entry in your `/etc/hosts` file:
+
+```
+127.0.0.1    localhost
+```
+
+While it's not recommended, you can modify `start.sh` and remove the `PORT=3000` to default back to loading Peacock on port 80 and run Peacock **as root**.
 
 **Game is ready to play with Peacock!**
 
