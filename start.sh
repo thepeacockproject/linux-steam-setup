@@ -32,7 +32,7 @@ info_message() {
 # Grab Peacock if needed
 if [ ! -f "./Peacock/chunk0.js" ]; then
     LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/thepeacockproject/peacock/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-    FOLDER_NAME="Peacock-${LATEST_RELEASE}-lite"
+    FOLDER_NAME="Peacock-${LATEST_RELEASE}-linux"
     FILE_NAME="${FOLDER_NAME}.zip"
 
     info_message "Grabbing Peacock"
