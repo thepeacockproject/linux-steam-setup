@@ -79,7 +79,7 @@ fi
 
 # Install node if needed
 if ! command -v node &> /dev/null && [ ! -d "./node" ]; then
-    info_message "Grabbing node"
+    info_message "Grabbing Node.js"
     node_version=$(cat Peacock/.nvmrc)
     node_url="https://nodejs.org/dist/$node_version/node-$node_version-linux-x64.tar.gz"
 
@@ -88,12 +88,12 @@ if ! command -v node &> /dev/null && [ ! -d "./node" ]; then
     curl -sS $node_url | tar --strip-components=1 -C node -zxf  -
 
     if [ $? -eq 0 ]; then
-        success_message "Installed node"
+        success_message "Installed Node.js"
     else
-        error_message "We hit a problem getting node"
+        error_message "We hit a problem getting Node.js"
     fi
 else
-    success_message "NodeJS already installed"
+    success_message "Node.js already installed"
 fi
 
 info_message "Starting Peacock"
