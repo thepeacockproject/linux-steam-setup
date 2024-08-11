@@ -97,6 +97,7 @@ else
 fi
 
 info_message "Starting Peacock"
-PORT=3000 node ./Peacock/chunk0.js
+cd Peacock
+PORT=3000 node chunk0.js
 
 trap popd EXIT
