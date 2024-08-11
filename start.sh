@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Setup the path to include local node
-PATH=node/bin:$PATH
+PATH=$PWD/node/bin:$PATH
 
 # Get the directory of the script
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
