@@ -1,11 +1,15 @@
 #!/bin/bash
 
-# Setup the path to include local node
-PATH=$PWD/node/bin:$PATH
+#################################################################
 
-# Get the directory of the script
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-pushd $SCRIPT_DIR
+STEAM_DIR=~/.local/share/Steam
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+PEACOCK_REPO="https://github.com/thepeacockproject/peacock"
+NODE_DIR="${SCRIPT_DIR}/node"
+PEACOCK_DIR="${SCRIPT_DIR}/Peacock"
+SERVER_PORT=3000
+
+#################################################################
 
 # Define ANSI escape codes for text formatting
 BOLD='\e[1m'
@@ -14,90 +18,99 @@ RED='\e[31m'
 GREEN='\e[32m'
 BLUE='\e[34m'
 
-# Success message function
-success_message() {
-  echo -e "[${GREEN}${BOLD}✔${RESET}] $1!"
-}
+# Functions for messages
+success_message() { echo -e "[${GREEN}${BOLD}✔${RESET}] $1!"; }
+error_message() { echo -e "[${RED}${BOLD}Error${RESET}] $1"; }
+info_message() { echo -e "\n[${BLUE}${BOLD}Info${RESET}] $1"; }
 
-# Error message function
-error_message() {
-  echo -e "[${RED}${BOLD}Error${RESET}] $1"
-}
+# Download Peacock
+download_peacock() {
+    # If Peacock isn't present, download it
+    if [ ! -f "${PEACOCK_DIR}/chunk0.js" ]; then
+        local latest_release
+        local folder_name
+        local file_name
 
-# Information message function
-info_message() {
-  echo -e "\n[${BLUE}${BOLD}Info${RESET}] $1"
-}
+        latest_release=$(curl -L -s -H 'Accept: application/json' "${PEACOCK_REPO}/releases/latest" | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+        folder_name="Peacock-${latest_release}-linux"
+        file_name="${folder_name}.zip"
 
-# Grab Peacock if needed
-if [ ! -f "./Peacock/chunk0.js" ]; then
-    LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/thepeacockproject/peacock/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-    FOLDER_NAME="Peacock-${LATEST_RELEASE}-linux"
-    FILE_NAME="${FOLDER_NAME}.zip"
+        info_message "Downloading Peacock..."
 
-    info_message "Grabbing Peacock"
-
-    curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" \
-    && unzip -q ${FILE_NAME} \
-    && rm ${FILE_NAME} \
-    && mv ${FOLDER_NAME} Peacock
-
-    if [ $? -eq 0 ]; then
-        success_message "Peacock downloaded"
-    else
-        error_message "We hit a problem getting Peacock"
-    fi
-else
-    success_message "Peacock already installed"
-fi
-
-# Copy files
-STEAM_DIR=~/.local/share/Steam
-
-STEAM_PATHS=$(cat "${STEAM_DIR}/steamapps/libraryfolders.vdf" | grep -oP '"path"\s+"\K[^"]+')
-
-HITMAN_FOUND=false
-for i in $STEAM_PATHS; do
-    if [ -d "${i}/steamapps/common/HITMAN 3" ]; then
-        HITMAN_FOUND=true
-        # Hitman installed here
-        info_message "Found Hitman 3 in '${i}/steamapps/common/HITMAN 3', copying needed files"
-        cp Peacock/PeacockPatcher.exe "${i}/steamapps/common/HITMAN 3/" \
-        && cp WineLaunch.bat "${i}/steamapps/common/HITMAN 3/"
-
+        curl -sSLJO -H "Accept: application/octet-stream" "${PEACOCK_REPO}/releases/download/${latest_release}/${file_name}" \
+            && unzip -q "${file_name}" \
+            && rm "${file_name}" \
+            && mv "${folder_name}" "${PEACOCK_DIR}"
+        
         if [ $? -eq 0 ]; then
-            success_message "Copied files"
+            success_message "Peacock downloaded"
         else
-            error_message "We hit a problem copying files"
+            error_message "We hit a problem getting Peacock"
         fi
-    fi
-done
-
-if ! $HITMAN_FOUND; then
-    error_message "Couldn't find HITMAN 3. Ensure it's installed correctly, if this is an error then copy the following files yourself\n- Peacock/PeacockPatcher.exe\n- WineLaunch.bat\n\nTo the same directory as HITMAN 3's Launcher.exe\n\n"
-fi
-
-# Install node if needed
-if ! command -v node &> /dev/null && [ ! -d "./node" ]; then
-    info_message "Grabbing Node.js"
-    node_version=$(cat Peacock/.nvmrc)
-    node_url="https://nodejs.org/dist/$node_version/node-$node_version-linux-x64.tar.gz"
-
-    # Install node
-    mkdir node
-    curl -sS $node_url | tar --strip-components=1 -C node -zxf  -
-
-    if [ $? -eq 0 ]; then
-        success_message "Installed Node.js"
     else
-        error_message "We hit a problem getting Node.js"
+        success_message "Peacock already installed"
     fi
-else
-    success_message "Node.js already installed"
-fi
+}
 
-info_message "Starting Peacock"
-cd Peacock
-PORT=3000 node chunk0.js
+# Find and process Hitman installations
+process_hitman_installation() {
+    local hitman_found=false
+    local paths
 
+    paths=$(grep -oP '"path"\s+"\K[^"]+' "${STEAM_DIR}/steamapps/libraryfolders.vdf")
+    for path in $paths; do
+        ######
+        # Remove the games you don't want Peacock to be installed for from this list ("HITMAN" "HITMAN2" "HITMAN 3")
+        ######
+        for game in "HITMAN" "HITMAN2" "HITMAN 3"; do
+            local game_path="${path}/steamapps/common/${game}"
+            if [ -d "${game_path}" ]; then
+                hitman_found=true
+                info_message "Found ${game} in '${game_path}', copying needed files..."
+                cp "${PEACOCK_DIR}/PeacockPatcher.exe" "${game_path}/" \
+                    && cp "${SCRIPT_DIR}/WineLaunch.bat" "${game_path}/"
+                if [ $? -eq 0 ]; then
+                    success_message "Files copied for ${game}"
+                else
+                    error_message "There was a problem copying files"
+                fi
+            fi
+        done
+    done
+
+    # If no Hitman game was found
+    if ! $hitman_found; then
+        error_message "Couldn't find any HITMAN game. Ensure it's installed correctly, then copy the following files manually:\n- Peacock/PeacockPatcher.exe\n- WineLaunch.bat\n\n to the same folder as HITMAN (2/3)'s Launcher.exe\n\n"
+    fi
+}
+
+# Install Node.js if needed
+install_node() {
+    if ! command -v node &> /dev/null && [ ! -d "${NODE_DIR}" ]; then
+        info_message "Installing Node.js..."
+        local node_version
+        node_version=$(cat "${PEACOCK_DIR}/.nvmrc")
+        mkdir -p "${NODE_DIR}"
+        curl -sS "https://nodejs.org/dist/${node_version}/node-${node_version}-linux-x64.tar.gz" \
+            | tar --strip-components=1 -C "${NODE_DIR}" -zxf -
+        if [ $? -eq 0 ]; then
+            success_message "Installed Node.js"
+        else
+            error_message "There was a problem getting Node.js"
+        fi
+    else
+        success_message "Node.js already installed"
+    fi
+}
+
+info_message "Starting Setup..."
+pushd "${SCRIPT_DIR}"
+
+download_peacock
+process_hitman_installation
+install_node
+
+info_message "Starting Peacock server..."
+cd "${PEACOCK_DIR}"
+PORT=${SERVER_PORT} node chunk0.js
 trap popd EXIT
