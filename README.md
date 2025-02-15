@@ -134,6 +134,7 @@ The main OnlineTools window should now look like this;
 ![OnlineTools Old Patcher Settings](.github/readme-img/onlinetools_old_patcher_settings.png)
 
 If you have not changed the port from the default of `3000`, you need to change the `localhost` line to `localhost:3000` then press enter.
+
 If you are using port `80` you do not need to change this. If you changed it to something other than `3000`, you need to change it to `localhost:PORT` where `PORT` is your chosen port.
 
 The window should now look like this (if you are using the default configuration);
@@ -144,7 +145,7 @@ If you want to choose when you connect to Peacock, you can open the OnlineTools 
 
 ![OnlineTools Apply Domain](.github/readme-img/onlinetools_apply_button.png)
 
-If you want to connect to Peacock (or a different server) every time you start the game, you can check the box highlighted below;
+If you want to connect to Peacock every time you start the game, you can check the box highlighted below;
 
 ![OnlineTools Default Domain](.github/readme-img/onlinetools_default_domain.png)
 
