@@ -115,7 +115,7 @@ If you'd prefer to use the Patcher, instructions can be found in the spoiler bel
 
 ## Installing the SDK
 
-You can install the [ZHMModSDK](https://`github.com/OrfeasZ/ZHMModSDK/releases/latest) on Linux by following [this guide](https://github.com/OrfeasZ/ZHMModSDK/blob/master/INSTALL-deck.md), if you're on Epic (and using Heroic Games Launcher) you can open Winecfg directly through the settings menu of HITMAN 3 (World of Assassination).
+You can install the [ZHMModSDK](https://github.com/OrfeasZ/ZHMModSDK/releases/latest) on Linux by following [this guide](https://github.com/OrfeasZ/ZHMModSDK/blob/master/INSTALL-deck.md), if you're on Epic (and using Heroic Games Launcher) you can open Winecfg directly through the settings menu of HITMAN 3 (World of Assassination).
 
 OnlineTools is included in the standard SDK release so you do not need to download anything else.
 
