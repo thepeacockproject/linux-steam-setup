@@ -31,10 +31,10 @@ mkdir -p ~/.config/systemd/user
 cp peacock.service ~/.config/systemd/user/
 ```
 
-Set it to run on startup & also run now with `systemctl --user enable --now peacock`
+If you want to set it to run on startup & also run now with `systemctl --user enable --now peacock`
+If you'd rather just run it as and when you wanted, `systemctl --user start peacock` and `systemctl --user stop peacock`
 
 Non-systemd users should use whichever init system they use to call the start.sh script on startup.
-If you'd rather just run it as and when you wanted, `systemctl --user start peacock` and `systemctl --user stop peacock`
 
 ## Verify a clean startup
 
@@ -68,36 +68,85 @@ Dec 20 16:40:07 steamdeck start.sh[79804]: [16:40:07:591] [Debug] Peacock is up 
 
 The most important bit there is "Server started" and "Peacock is up to date". If Peacock is not up to date, remove the Peacock folder and restart the service with `systemctl --user restart peacock`
 
-## Adjust your launch options in Steam
+## Connecting to Peacock
 
-Ensure this is copied exactly, you can use the clipboard icon next to this snippet to copy it (assuming you're browsing this on github.com)
+There are now two methods you can use to connect to Peacock, you can;
+- Use the OnlineTools SDK mod (recommended), or;
+- Launch the Patcher in the same Wine prefix.
 
-```bash
-bash -c 'exec "${@/Launcher.exe/WineLaunch.bat}"' -- %command%
-```
+The OnlineTools SDK mod allows you to set a different server as the default one, so when you start the game up you don't have to do anything to connect to Peacock (assuming the server starts on startup).
 
-Then right-click on the game in Steam -> Properties and paste it in the "Launch Options" box. Steam Deck users should use the cog icon on the game detail view then continue as needed; but due to the awkward keyboard you might find it easier to do in desktop mode.
+If you'd prefer to use the Patcher, instructions can be found in the spoiler below;
 
-## Start Hitman 3
-Run from anywhere, the game should start alongside the Peacock Patcher. If your game starts up full-screen, then you will have to alt-tab out.
+<details>
+  <summary>Legacy Patcher Instructions</summary>
 
-Steam Deck users can access the patcher by pressing the Steam button and navigating to the active windows at the bottom of the "HITMAN 3" section.
+  ## Adjust your launch options in Steam
+  
+  Ensure this is copied exactly, you can use the clipboard icon next to this snippet to copy it (assuming you're browsing this on github.com)
+  
+  ```bash
+  bash -c 'exec "${@/Launcher.exe/WineLaunch.bat}"' -- %command%
+  ```
+  
+  Then right-click on the game in Steam -> Properties and paste it in the "Launch Options" box. Steam Deck users should use the cog icon on the game detail view then continue as needed; but due to the awkward keyboard you might find it easier to do in desktop mode.
+  
+  ## Start Hitman 3
+  Run from anywhere, the game should start alongside the Peacock Patcher. If your game starts up full-screen, then you will have to alt-tab out.
+  
+  Steam Deck users can access the patcher by pressing the Steam button and navigating to the active windows at the bottom of the "HITMAN 3" section.
+  
+  ## Edit Peacock Patcher Server address to `127.0.0.1:3000`
+  
+  It's not clear that you can directly edit the combo box that says "Peacock Local" but you can, type `127.0.0.1:3000` in the combo box then click Re-patch. The Patcher will save this setting and you won't be required to edit it again.
+  
+  It's important to change this as the default "Peacock Local" expects it to live on port 80.
+  
+  If you have issues on the login screen, check if you have the following entry in your `/etc/hosts` file:
+  
+  ```
+  127.0.0.1    localhost
+  ```
+  
+  While it's not recommended, you can modify `start.sh` and remove the `PORT=3000` to default back to loading Peacock on port 80 and run Peacock **as root**.
+  
+  **Game is ready to play with Peacock!**
+</details>
 
-## Edit Peacock Patcher Server address to `127.0.0.1:3000`
+## Installing the SDK
 
-It's not clear that you can directly edit the combo box that says "Peacock Local" but you can, type `127.0.0.1:3000` in the combo box then click Re-patch. The Patcher will save this setting and you won't be required to edit it again.
+You can install the [ZHMModSDK](https://`github.com/OrfeasZ/ZHMModSDK/releases/latest) on Linux by following [this guide](https://github.com/OrfeasZ/ZHMModSDK/blob/master/INSTALL-deck.md), if you're on Epic (and using Heroic Games Launcher) you can open Winecfg directly through the settings menu of HITMAN 3 (World of Assassination).
 
-It's important to change this as the default "Peacock Local" expects it to live on port 80.
+OnlineTools is included in the standard SDK release so you do not need to download anything else.
 
-If you have issues on the login screen, check if you have the following entry in your `/etc/hosts` file:
+## Configuring OnlineTools
 
-```
-127.0.0.1    localhost
-```
+Start the game and open the SDK panel with the `~` key (`^` on QWERTZ layouts), click the `Mods` button in the top left, find `OnlineTools` and check the box next to it, finally press `OK`.
 
-While it's not recommended, you can modify `start.sh` and remove the `PORT=3000` to default back to loading Peacock on port 80 and run Peacock **as root**.
+Next, open the SDK panel again. There should be a new `OnlineTools` button on the bar at the top of the screen, click this button and the following menu should appear;
 
-**Game is ready to play with Peacock!**
+![Default OnlineTools Menu](.github/readme-img/onlinetools_default_menu.png)
+
+Then, press the `Help` button, give the menu that pops up a read to familiarise yourself with the mod. Then press `Load Old Patcher Settings` and close the help popup.
+
+The main OnlineTools window should now look like this;
+
+![OnlineTools Old Patcher Settings](.github/readme-img/onlinetools_old_patcher_settings.png)
+
+If you have not changed the port from the default of `3000`, you need to change the `localhost` line to `localhost:3000` then press enter.
+If you are using port `80` you do not need to change this. If you changed it to something other than `3000`, you need to change it to `localhost:PORT` where `PORT` is your chosen port.
+
+The window should now look like this (if you are using the default configuration);
+
+![OnlineTools With Changed Port](.github/readme-img/onlinetools_changed_port.png)
+
+If you want to choose when you connect to Peacock, you can open the OnlineTools menu and press the circled button below;
+
+![OnlineTools Apply Domain](.github/readme-img/onlinetools_apply_button.png)
+
+If you want to connect to Peacock (or a different server) every time you start the game, you can check the box highlighted below;
+
+![OnlineTools Default Domain](.github/readme-img/onlinetools_default_domain.png)
 
 # Troubleshooting
 
