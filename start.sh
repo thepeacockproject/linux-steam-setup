@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Change these if you want to different settings for the server
+node_host=127.0.0.1
+node_port=3000
+
 # Setup the path to include local node
 PATH=$PWD/node/bin:$PATH
 
@@ -98,6 +102,6 @@ fi
 
 info_message "Starting Peacock"
 cd Peacock
-PORT=3000 node chunk0.js
+PORT=$node_port HOST=$node_host node chunk0.js
 
 trap popd EXIT

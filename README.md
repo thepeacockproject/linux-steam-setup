@@ -161,7 +161,7 @@ These setup instructions wrap around the existing code from Peacock, and to simp
 ## ./node/bin/node: No such file or directory
 This indicates there was some issue downloading NodeJS. This can be fixed yourself by either installing node yourself through your package manager of choice or by downloading the zip and moving it to where `start.sh` lives and rename the folder to `node` (such that `node/bin/node` should return), but this may also indicate something worth filing an issue for.
 
-## [Error] Failed to use the server on 0.0.0.0:3000!
+## [Error] Failed to use the server on 127.0.0.1:3000!
 As the subsequent lines suggest, this error means that Peacock is already running somewhere else. `pkill node` should kill everything, but you should first verify with `ps aux | grep node` that the only thing you'll kill is the Peacock process (you should have output similar to the below)
 
 ```
