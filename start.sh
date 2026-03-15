@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Setup the path to include local node
 PATH=$PWD/node/bin:$PATH
@@ -16,17 +16,17 @@ BLUE='\e[34m'
 
 # Success message function
 success_message() {
-  echo -e "[${GREEN}${BOLD}✔${RESET}] $1!"
+    echo -e "[${GREEN}${BOLD}✔${RESET}] $1!"
 }
 
 # Error message function
 error_message() {
-  echo -e "[${RED}${BOLD}Error${RESET}] $1"
+    echo -e "[${RED}${BOLD}Error${RESET}] $1"
 }
 
 # Information message function
 info_message() {
-  echo -e "\n[${BLUE}${BOLD}Info${RESET}] $1"
+    echo -e "\n[${BLUE}${BOLD}Info${RESET}] $1"
 }
 
 # Grab Peacock if needed
@@ -37,10 +37,10 @@ if [ ! -f "./Peacock/chunk0.js" ]; then
 
     info_message "Grabbing Peacock"
 
-    curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" \
-    && unzip -q ${FILE_NAME} \
-    && rm ${FILE_NAME} \
-    && mv ${FOLDER_NAME} Peacock
+    curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" &&
+        unzip -q ${FILE_NAME} &&
+        rm ${FILE_NAME} &&
+        mv ${FOLDER_NAME} Peacock
 
     if [ $? -eq 0 ]; then
         success_message "Peacock downloaded"
@@ -62,8 +62,8 @@ for i in $STEAM_PATHS; do
         HITMAN_FOUND=true
         # Hitman installed here
         info_message "Found Hitman 3 in '${i}/steamapps/common/HITMAN 3', copying needed files"
-        cp Peacock/PeacockPatcher.exe "${i}/steamapps/common/HITMAN 3/" \
-        && cp WineLaunch.bat "${i}/steamapps/common/HITMAN 3/"
+        cp Peacock/PeacockPatcher.exe "${i}/steamapps/common/HITMAN 3/" &&
+            cp WineLaunch.bat "${i}/steamapps/common/HITMAN 3/"
 
         if [ $? -eq 0 ]; then
             success_message "Copied files"
@@ -78,14 +78,14 @@ if ! $HITMAN_FOUND; then
 fi
 
 # Install node if needed
-if ! command -v node &> /dev/null && [ ! -d "./node" ]; then
+if ! command -v node &>/dev/null && [ ! -d "./node" ]; then
     info_message "Grabbing Node.js"
     node_version=$(cat Peacock/.nvmrc)
     node_url="https://nodejs.org/dist/$node_version/node-$node_version-linux-x64.tar.gz"
 
     # Install node
     mkdir node
-    curl -sS $node_url | tar --strip-components=1 -C node -zxf  -
+    curl -sS $node_url | tar --strip-components=1 -C node -zxf -
 
     if [ $? -eq 0 ]; then
         success_message "Installed Node.js"
