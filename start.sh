@@ -37,7 +37,7 @@ if [ ! -f "./Peacock/chunk0.js" ]; then
 
     info_message "Grabbing Peacock"
 
-    curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" &&
+    wget "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" &&
         unzip -q ${FILE_NAME} &&
         rm ${FILE_NAME} &&
         mv ${FOLDER_NAME} Peacock
@@ -85,7 +85,7 @@ if ! command -v node &>/dev/null && [ ! -d "./node" ]; then
 
     # Install node
     mkdir node
-    curl -sS $node_url | tar --strip-components=1 -C node -zxf -
+    wget $node_url && tar --strip-components=1 -C node -xf ./node-*.tar.gz
 
     if [ $? -eq 0 ]; then
         success_message "Installed Node.js"
