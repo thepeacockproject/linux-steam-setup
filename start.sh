@@ -5,7 +5,7 @@ PATH=$PWD/node/bin:$PATH
 
 # Get the directory of the script
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-pushd $SCRIPT_DIR
+pushd "$SCRIPT_DIR"
 
 # Define ANSI escape codes for text formatting
 BOLD='\e[1m'
@@ -31,16 +31,38 @@ info_message() {
 
 # Grab Peacock if needed
 if [ ! -f "./Peacock/chunk0.js" ]; then
-    LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/thepeacockproject/peacock/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+    if ! command -v wget >/dev/null 2>&1; then
+        LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/thepeacockproject/peacock/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+    else
+        LATEST_RELEASE=$(wget -qO- \
+            --header="Accept: application/json" \
+            --max-redirect=20 \
+            https://github.com/thepeacockproject/peacock/releases/latest |
+            sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+    fi
     FOLDER_NAME="Peacock-${LATEST_RELEASE}-linux"
     FILE_NAME="${FOLDER_NAME}.zip"
 
     info_message "Grabbing Peacock"
 
-    curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}" &&
-        unzip -q ${FILE_NAME} &&
-        rm ${FILE_NAME} &&
-        mv ${FOLDER_NAME} Peacock
+    if ! command -v unzip >/dev/null 2>&1; then
+        error_message "Unzip is not installed! Please install it and try again."
+        exit 1
+    fi
+
+    if ! command -v wget >/dev/null 2>&1; then
+        curl -sSLJO -H "Accept: application/octet-stream" "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}"
+    else
+        wget -q \
+            --show-progress \
+            --content-disposition \
+            --header="Accept: application/octet-stream" \
+            "https://github.com/thepeacockproject/Peacock/releases/download/${LATEST_RELEASE}/${FILE_NAME}"
+    fi
+
+    unzip -q "${FILE_NAME}" &&
+        rm "${FILE_NAME}" &&
+        mv "${FOLDER_NAME}" Peacock
 
     if [ $? -eq 0 ]; then
         success_message "Peacock downloaded"
@@ -85,7 +107,12 @@ if ! command -v node &>/dev/null && [ ! -d "./node" ]; then
 
     # Install node
     mkdir node
-    curl -sS $node_url | tar --strip-components=1 -C node -zxf -
+
+    if ! command -v wget >/dev/null 2>&1; then
+        curl -sS "$node_url" | tar --strip-components=1 -C node -zxf -
+    else
+        wget -qO- "$node_url" | tar --strip-components=1 -C node -zxf -
+    fi
 
     if [ $? -eq 0 ]; then
         success_message "Installed Node.js"
