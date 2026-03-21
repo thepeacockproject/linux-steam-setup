@@ -15,7 +15,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Title
-            Constraint::Length(8), // Status panel
+            Constraint::Length(9), // Status panel
             Constraint::Min(6),    // Menu
             Constraint::Length(1), // Footer
         ])
@@ -35,7 +35,7 @@ pub fn render(frame: &mut Frame, app: &App) {
     render_menu(frame, app, chunks[2]);
 
     // Footer
-    let footer = footer_text(&[("↑↓", "Navigate"), ("Enter", "Select"), ("q", "Quit")]);
+    let footer = footer_text(&[("↑↓", "Navigate"), ("Enter", "Select"), ("Esc", "Quit")]);
     frame.render_widget(
         Paragraph::new(footer).alignment(Alignment::Center),
         chunks[3],
@@ -44,6 +44,39 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 fn render_status(frame: &mut Frame, app: &App, area: Rect) {
     let mut lines = Vec::new();
+
+    // Launcher version
+    if let Some(status) = &app.launcher_status {
+        let (value, color) = if status.update_available() {
+            let latest = status
+                .latest_version
+                .as_deref()
+                .unwrap_or("unknown")
+                .trim_start_matches('v');
+            (
+                format!(
+                    "v{} → v{latest} available — please download the latest release!",
+                    status.current_version
+                ),
+                Color::Yellow,
+            )
+        } else {
+            (
+                format!("v{} (up to date)", status.current_version),
+                Color::Green,
+            )
+        };
+        lines.push(info_line("Launcher", &value, color));
+    } else {
+        lines.push(info_line(
+            "Launcher",
+            &format!(
+                "v{} (checking for updates…)",
+                crate::core::launcher::LAUNCHER_VERSION
+            ),
+            Color::DarkGray,
+        ));
+    }
 
     // Peacock version
     if let Some(status) = &app.peacock_status {
@@ -194,9 +227,15 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
                     MenuAction::Settings => app.go_to(Screen::Settings),
                     MenuAction::Options => app.go_to(Screen::Options),
                     MenuAction::Migration => app.go_to(Screen::Migration),
+                    MenuAction::DownloadLauncher => {
+                        crate::core::launcher::open_download_page();
+                    }
                     MenuAction::Quit => app.should_quit = true,
                 }
             }
+        }
+        KeyCode::Esc => {
+            app.should_quit = true;
         }
         _ => {}
     }

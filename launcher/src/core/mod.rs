@@ -1,6 +1,7 @@
 pub mod config;
 pub mod download;
 pub mod game_detect;
+pub mod launcher;
 pub mod migration;
 pub mod node;
 pub mod options;

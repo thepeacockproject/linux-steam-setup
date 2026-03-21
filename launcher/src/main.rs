@@ -80,6 +80,17 @@ async fn run_app() -> anyhow::Result<()> {
         });
     }
 
+    // Check for launcher updates asynchronously
+    {
+        let client = app.client.clone();
+        let tx = app.msg_tx.clone();
+
+        tokio::spawn(async move {
+            let status = crate::core::launcher::check_update(&client).await;
+            let _ = tx.send(app::AppMessage::LauncherStatusLoaded(status));
+        });
+    }
+
     // Install panic hook to restore terminal on panic
     let original_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {

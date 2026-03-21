@@ -4,7 +4,8 @@ use tokio::sync::mpsc;
 
 use crate::core::config::Config;
 use crate::core::game_detect::GameInstall;
-use crate::core::migration::LegacyInstall;
+use crate::core::launcher::LauncherStatus;
+use crate::core::migration::{LegacyInstall, MigrationResult};
 use crate::core::node::NodeStatus;
 use crate::core::options::PeacockOption;
 use crate::core::peacock::PeacockStatus;
@@ -39,8 +40,12 @@ pub enum AppMessage {
     ConfigUpdated(Config),
     /// Peacock status fetched asynchronously
     PeacockStatusLoaded(PeacockStatus),
+    /// Launcher update check completed asynchronously
+    LauncherStatusLoaded(LauncherStatus),
     /// Folder picked from the native file dialog (None if cancelled)
     FolderPicked(Option<PathBuf>),
+    /// Migration completed and produced a detailed result.
+    MigrationFinished(MigrationResult, Config),
 }
 
 /// Which field is being edited in Settings.
@@ -71,6 +76,7 @@ pub struct App {
 
     // Status data (cached, refreshed on demand)
     pub peacock_status: Option<PeacockStatus>,
+    pub launcher_status: Option<LauncherStatus>,
     pub node_status: Option<NodeStatus>,
     pub service_status: Option<ServiceStatus>,
     pub game_installs: Vec<GameInstall>,
@@ -119,6 +125,7 @@ pub struct App {
     pub migration_confirmed: bool,
     pub migration_done: bool,
     pub migration_error: Option<String>,
+    pub migration_result: Option<MigrationResult>,
     pub migration_remove_old: bool,
 
     // Async message channel
@@ -144,6 +151,7 @@ pub enum MenuAction {
     Settings,
     Options,
     Migration,
+    DownloadLauncher,
     Quit,
 }
 
@@ -160,6 +168,7 @@ impl App {
             should_quit: false,
 
             peacock_status: None,
+            launcher_status: None,
             node_status: None,
             service_status: None,
             game_installs: Vec::new(),
@@ -201,6 +210,7 @@ impl App {
             migration_confirmed: false,
             migration_done: false,
             migration_error: None,
+            migration_result: None,
             migration_remove_old: false,
 
             msg_tx,
@@ -264,6 +274,18 @@ impl App {
                 enabled: true,
             });
         }
+
+        let download_label = match &self.launcher_status {
+            Some(s) if s.update_available() => {
+                "⬇ Download latest launcher (update available!)".into()
+            }
+            _ => "Download latest launcher".into(),
+        };
+        items.push(MenuItem {
+            label: download_label,
+            action: MenuAction::DownloadLauncher,
+            enabled: true,
+        });
 
         items.push(MenuItem {
             label: "Quit".into(),
@@ -338,6 +360,10 @@ impl App {
                 AppMessage::PeacockStatusLoaded(status) => {
                     self.peacock_status = Some(status);
                 }
+                AppMessage::LauncherStatusLoaded(status) => {
+                    self.launcher_status = Some(status);
+                    self.rebuild_menu();
+                }
                 AppMessage::FolderPicked(path) => {
                     if self.screen == Screen::Migration {
                         if let Some(path) = path {
@@ -355,6 +381,12 @@ impl App {
                             self.migration_mode = MigrationMode::SelectSource;
                         }
                     }
+                }
+                AppMessage::MigrationFinished(result, config) => {
+                    self.task_running = false;
+                    self.config = config;
+                    self.migration_done = true;
+                    self.migration_result = Some(result);
                 }
             }
         }
@@ -402,6 +434,7 @@ impl App {
                 self.migration_confirmed = false;
                 self.migration_done = false;
                 self.migration_error = None;
+                self.migration_result = None;
                 self.migration_remove_old = false;
             }
             Screen::MainMenu => {

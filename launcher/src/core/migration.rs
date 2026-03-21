@@ -114,11 +114,15 @@ pub fn migrate(legacy: &LegacyInstall, config: &mut Config) -> Result<MigrationR
         }
     }
 
-    // Update and install the new systemd service
-    if let Err(e) = super::service::install(config) {
-        result.service_error = Some(format!("Failed to install new service: {e}"));
-    } else {
+    // Replace any previous service definition and restore prior service state.
+    if let Err(e) = super::service::replace(config).map(|service_result| {
         result.service_migrated = true;
+        result.service_replaced = service_result.had_existing_service;
+        result.legacy_service_replaced = service_result.replaced_legacy_service;
+        result.service_enabled_restored = service_result.restored_enabled;
+        result.service_restarted = service_result.restored_running;
+    }) {
+        result.service_error = Some(format!("Failed to install new service: {e}"));
     }
 
     // Clean up legacy PeacockPatcher.exe and WineLaunch.bat from game directories
@@ -154,12 +158,16 @@ pub fn remove_legacy_dir(legacy: &LegacyInstall) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct MigrationResult {
     pub success: bool,
     pub peacock_migrated: bool,
     pub node_migrated: bool,
     pub service_migrated: bool,
+    pub service_replaced: bool,
+    pub legacy_service_replaced: bool,
+    pub service_enabled_restored: bool,
+    pub service_restarted: bool,
     pub service_error: Option<String>,
     pub legacy_files_cleaned: usize,
 }

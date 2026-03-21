@@ -1,5 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
-use ratatui::{prelude::*, widgets::Paragraph};
+use ratatui::{
+    prelude::*,
+    widgets::{Paragraph, Wrap},
+};
 
 use super::{footer_text, info_line, titled_block};
 use crate::app::{App, AppMessage, MigrationMode};
@@ -201,6 +204,11 @@ fn render_ready(frame: &mut Frame, area: Rect, app: &App) {
             &app.config.install_dir.display().to_string(),
             Color::Cyan,
         ),
+        info_line(
+            "Patching",
+            "Switch to ZHMModSDK + OnlineTools",
+            Color::Yellow,
+        ),
     ];
     let info_panel = Paragraph::new(lines).block(titled_block("Migration Source"));
     frame.render_widget(info_panel, chunks[1]);
@@ -216,11 +224,12 @@ fn render_ready(frame: &mut Frame, area: Rect, app: &App) {
         Paragraph::new("Starting migration…").style(Style::default().fg(Color::Yellow))
     } else {
         Paragraph::new(
-            "This will copy your Peacock and Node.js installation to the new location\n\
-             and update the systemd service.\n\n\
+            "This will copy Peacock and Node.js into the launcher-managed location, replace any existing peacock.service with the new launcher service, and remove old PeacockPatcher.exe/WineLaunch.bat files it finds.\n\n\
+             After migration, use Manage ZHMModSDK and OnlineTools in-game instead of the old batch-file patcher flow.\n\n\
              Press Enter to start migration.",
         )
         .style(Style::default().fg(Color::DarkGray))
+        .wrap(Wrap { trim: false })
     };
     frame.render_widget(status_content.block(titled_block("Migration")), chunks[2]);
 
@@ -247,6 +256,62 @@ fn render_post_migration(app: &App) -> Paragraph<'static> {
         ),
         Line::raw(""),
     ];
+
+    if let Some(result) = &app.migration_result {
+        if result.legacy_service_replaced {
+            lines.push(Line::raw(
+                "Replaced your legacy systemd service with the launcher-managed one.",
+            ));
+        } else if result.service_replaced {
+            lines.push(Line::raw(
+                "Reinstalled your existing Peacock service for the new launcher layout.",
+            ));
+        } else if result.service_migrated {
+            lines.push(Line::raw(
+                "Installed a new launcher-managed Peacock service.",
+            ));
+        }
+
+        if result.service_enabled_restored {
+            lines.push(Line::raw("Restored its boot-time enabled state."));
+        }
+
+        if result.service_restarted {
+            lines.push(Line::raw(
+                "Restarted the service because it was already running before migration.",
+            ));
+        }
+
+        if result.legacy_files_cleaned > 0 {
+            lines.push(Line::raw(format!(
+                "Removed {} old patcher file(s) from detected game folders.",
+                result.legacy_files_cleaned
+            )));
+        }
+
+        if let Some(error) = &result.service_error {
+            lines.push(Line::styled(
+                format!("Service warning: {error}"),
+                Style::default().fg(Color::Yellow),
+            ));
+        }
+
+        lines.push(Line::raw(""));
+    }
+
+    lines.push(Line::styled(
+        "Next steps:",
+        Style::default().fg(Color::Cyan).bold(),
+    ));
+    lines.push(Line::raw(
+        "1. Open Manage ZHMModSDK and install it into HITMAN 3.",
+    ));
+    lines.push(Line::raw(
+        "2. Launch the game and use OnlineTools instead of PeacockPatcher or WineLaunch.bat.",
+    ));
+    lines.push(Line::raw("3. In OnlineTools, load the old patcher settings and confirm the address is localhost:3000."));
+    lines.push(Line::raw(""));
+
     for (i, label) in options.iter().enumerate() {
         let sel = i == app.migration_step;
         let marker = if sel { "▸ " } else { "  " };
@@ -257,7 +322,7 @@ fn render_post_migration(app: &App) -> Paragraph<'static> {
         };
         lines.push(Line::styled(format!("{marker}{label}"), style));
     }
-    Paragraph::new(lines)
+    Paragraph::new(lines).wrap(Wrap { trim: false })
 }
 
 // ---------------------------------------------------------------------------
@@ -380,16 +445,15 @@ fn start_migration(app: &mut App) {
     let tx = app.msg_tx.clone();
 
     tokio::spawn(async move {
-        let result =
-            tokio::task::spawn_blocking(move || migration::migrate(&legacy, &mut config)).await;
+        let result = tokio::task::spawn_blocking(move || {
+            let migration_result = migration::migrate(&legacy, &mut config)?;
+            Ok::<_, anyhow::Error>((migration_result, config))
+        })
+        .await;
 
         match result {
-            Ok(Ok(migration_result)) => {
-                if migration_result.success {
-                    let _ = tx.send(AppMessage::TaskDone("Migration complete".into()));
-                } else {
-                    let _ = tx.send(AppMessage::TaskError("Migration partially failed".into()));
-                }
+            Ok(Ok((migration_result, config))) => {
+                let _ = tx.send(AppMessage::MigrationFinished(migration_result, config));
                 let _ = tx.send(AppMessage::RefreshStatus);
             }
             Ok(Err(e)) => {

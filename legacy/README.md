@@ -2,6 +2,7 @@
 
 > **This setup method is deprecated.** Please use the new [Peacock Launcher AppImage](../README.md) instead.
 > These files are preserved for reference only.
+> If you already use this setup, follow the migration checklist in [MIGRATION.md](../MIGRATION.md) and switch to ZHMModSDK + OnlineTools instead of `WineLaunch.bat` and `PeacockPatcher.exe`.
 
 ---
 
