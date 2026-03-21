@@ -80,11 +80,13 @@ impl Config {
     }
 
     /// `{install_dir}/Peacock/userdata/`
+    #[allow(dead_code)]
     pub fn peacock_userdata_dir(&self) -> PathBuf {
         self.peacock_dir().join("userdata")
     }
 
     /// `{install_dir}/Peacock/plugins/`
+    #[allow(dead_code)]
     pub fn peacock_plugins_dir(&self) -> PathBuf {
         self.peacock_dir().join("plugins")
     }

@@ -6,6 +6,7 @@ use crate::core::config::Config;
 use crate::core::game_detect::GameInstall;
 use crate::core::migration::LegacyInstall;
 use crate::core::node::NodeStatus;
+use crate::core::options::PeacockOption;
 use crate::core::peacock::PeacockStatus;
 use crate::core::service::ServiceStatus;
 
@@ -17,6 +18,7 @@ pub enum Screen {
     Service,
     Sdk,
     Settings,
+    Options,
     Migration,
 }
 
@@ -105,6 +107,11 @@ pub struct App {
     pub settings_editing: bool,
     pub settings_message: Option<String>,
 
+    // Options screen state
+    pub options: Vec<PeacockOption>,
+    pub options_index: usize,
+    pub options_message: Option<String>,
+
     // Migration screen state
     pub migration_mode: MigrationMode,
     pub migration_source_index: usize,
@@ -135,6 +142,7 @@ pub enum MenuAction {
     Service,
     Sdk,
     Settings,
+    Options,
     Migration,
     Quit,
 }
@@ -182,6 +190,10 @@ impl App {
             settings_port: String::new(),
             settings_editing: false,
             settings_message: None,
+
+            options: Vec::new(),
+            options_index: 0,
+            options_message: None,
 
             migration_mode: MigrationMode::SelectSource,
             migration_source_index: 0,
@@ -231,6 +243,11 @@ impl App {
                 label: "Settings".into(),
                 action: MenuAction::Settings,
                 enabled: true,
+            },
+            MenuItem {
+                label: "Peacock Options".into(),
+                action: MenuAction::Options,
+                enabled: self.config.is_peacock_installed(),
             },
         ];
 
@@ -372,6 +389,11 @@ impl App {
                 self.settings_editing = false;
                 self.settings_message = None;
                 self.settings_field = SettingsField::InstallDir;
+            }
+            Screen::Options => {
+                self.options = crate::core::options::load_options(&self.config.peacock_dir());
+                self.options_index = 0;
+                self.options_message = None;
             }
             Screen::Migration => {
                 self.migration_mode = MigrationMode::SelectSource;
