@@ -139,13 +139,13 @@ Start the game and open the SDK panel with the `~` key (`^` on QWERTZ layouts), 
 
 Next, open the SDK panel again. There should be a new `OnlineTools` button on the bar at the top of the screen, click this button and the following menu should appear;
 
-![Default OnlineTools Menu](.github/readme-img/onlinetools_default_menu.png)
+![Default OnlineTools Menu](../.github/readme-img/onlinetools_default_menu.png)
 
 Then, press the `Help` button, give the menu that pops up a read to familiarise yourself with the mod. Then press `Load Old Patcher Settings` and close the help popup.
 
 The main OnlineTools window should now look like this;
 
-![OnlineTools Old Patcher Settings](.github/readme-img/onlinetools_old_patcher_settings.png)
+![OnlineTools Old Patcher Settings](../.github/readme-img/onlinetools_old_patcher_settings.png)
 
 If you have not changed the port from the default of `3000`, you need to change the `localhost` line to `localhost:3000` then press enter.
 
@@ -153,15 +153,15 @@ If you are using port `80` you do not need to change this. If you changed it to 
 
 The window should now look like this (if you are using the default configuration);
 
-![OnlineTools With Changed Port](.github/readme-img/onlinetools_changed_port.png)
+![OnlineTools With Changed Port](../.github/readme-img/onlinetools_changed_port.png)
 
 If you want to choose when you connect to Peacock, you can open the OnlineTools menu and press the circled button below;
 
-![OnlineTools Apply Domain](.github/readme-img/onlinetools_apply_button.png)
+![OnlineTools Apply Domain](../.github/readme-img/onlinetools_apply_button.png)
 
 If you want to connect to Peacock every time you start the game, you can check the box highlighted below;
 
-![OnlineTools Default Domain](.github/readme-img/onlinetools_default_domain.png)
+![OnlineTools Default Domain](../.github/readme-img/onlinetools_default_domain.png)
 
 # Troubleshooting
 
