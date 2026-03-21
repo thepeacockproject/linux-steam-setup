@@ -4,6 +4,7 @@ use tokio::sync::mpsc;
 
 use crate::core::config::Config;
 use crate::core::game_detect::GameInstall;
+use crate::core::launcher::LauncherStatus;
 use crate::core::migration::LegacyInstall;
 use crate::core::node::NodeStatus;
 use crate::core::options::PeacockOption;
@@ -39,6 +40,8 @@ pub enum AppMessage {
     ConfigUpdated(Config),
     /// Peacock status fetched asynchronously
     PeacockStatusLoaded(PeacockStatus),
+    /// Launcher update check completed asynchronously
+    LauncherStatusLoaded(LauncherStatus),
     /// Folder picked from the native file dialog (None if cancelled)
     FolderPicked(Option<PathBuf>),
 }
@@ -71,6 +74,7 @@ pub struct App {
 
     // Status data (cached, refreshed on demand)
     pub peacock_status: Option<PeacockStatus>,
+    pub launcher_status: Option<LauncherStatus>,
     pub node_status: Option<NodeStatus>,
     pub service_status: Option<ServiceStatus>,
     pub game_installs: Vec<GameInstall>,
@@ -144,6 +148,7 @@ pub enum MenuAction {
     Settings,
     Options,
     Migration,
+    DownloadLauncher,
     Quit,
 }
 
@@ -160,6 +165,7 @@ impl App {
             should_quit: false,
 
             peacock_status: None,
+            launcher_status: None,
             node_status: None,
             service_status: None,
             game_installs: Vec::new(),
@@ -265,6 +271,16 @@ impl App {
             });
         }
 
+        let download_label = match &self.launcher_status {
+            Some(s) if s.update_available() => "⬇ Download latest launcher (update available!)".into(),
+            _ => "Download latest launcher".into(),
+        };
+        items.push(MenuItem {
+            label: download_label,
+            action: MenuAction::DownloadLauncher,
+            enabled: true,
+        });
+
         items.push(MenuItem {
             label: "Quit".into(),
             action: MenuAction::Quit,
@@ -337,6 +353,10 @@ impl App {
                 }
                 AppMessage::PeacockStatusLoaded(status) => {
                     self.peacock_status = Some(status);
+                }
+                AppMessage::LauncherStatusLoaded(status) => {
+                    self.launcher_status = Some(status);
+                    self.rebuild_menu();
                 }
                 AppMessage::FolderPicked(path) => {
                     if self.screen == Screen::Migration {
