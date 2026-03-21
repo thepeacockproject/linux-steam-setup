@@ -192,6 +192,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
                     MenuAction::Service => app.go_to(Screen::Service),
                     MenuAction::Sdk => app.go_to(Screen::Sdk),
                     MenuAction::Settings => app.go_to(Screen::Settings),
+                    MenuAction::Options => app.go_to(Screen::Options),
                     MenuAction::Migration => app.go_to(Screen::Migration),
                     MenuAction::Quit => app.should_quit = true,
                 }

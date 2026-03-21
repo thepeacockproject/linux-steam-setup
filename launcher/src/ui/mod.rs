@@ -1,6 +1,7 @@
 pub mod install;
 pub mod main_menu;
 pub mod migration;
+pub mod options;
 pub mod sdk;
 pub mod service;
 pub mod settings;

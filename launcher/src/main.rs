@@ -106,6 +106,7 @@ async fn run_app() -> anyhow::Result<()> {
             Screen::Service => ui::service::render(frame, &app),
             Screen::Sdk => ui::sdk::render(frame, &app),
             Screen::Settings => ui::settings::render(frame, &app),
+            Screen::Options => ui::options::render(frame, &app),
             Screen::Migration => ui::migration::render(frame, &app),
         })?;
 
@@ -120,6 +121,7 @@ async fn run_app() -> anyhow::Result<()> {
                 Screen::Service => ui::service::handle_key(&mut app, key),
                 Screen::Sdk => ui::sdk::handle_key(&mut app, key),
                 Screen::Settings => ui::settings::handle_key(&mut app, key),
+                Screen::Options => ui::options::handle_key(&mut app, key),
                 Screen::Migration => ui::migration::handle_key(&mut app, key),
             }
         }

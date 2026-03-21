@@ -82,31 +82,34 @@ pub async fn install_or_update(
         find_linux_asset(&release).context("No Linux build found in the latest Peacock release")?;
 
     let peacock_dir = config.peacock_dir();
-    let userdata_dir = config.peacock_userdata_dir();
-    let plugins_dir = config.peacock_plugins_dir();
     let install_dir = &config.install_dir;
 
     // Create install dir if needed
     std::fs::create_dir_all(install_dir).context("Failed to create install directory")?;
 
-    // If updating, back up userdata and plugins
-    let userdata_backup = install_dir.join(".userdata_backup");
-    let plugins_backup = install_dir.join(".plugins_backup");
-    let has_userdata = userdata_dir.is_dir();
-    let has_plugins = plugins_dir.is_dir();
-
-    if has_userdata {
-        if userdata_backup.exists() {
-            std::fs::remove_dir_all(&userdata_backup)?;
-        }
-        copy_dir_recursive(&userdata_dir, &userdata_backup)
-            .context("Failed to back up userdata")?;
+    // Back up user data into a single staging directory
+    let backup_dir = install_dir.join(".peacock_backup");
+    if backup_dir.exists() {
+        std::fs::remove_dir_all(&backup_dir)?;
     }
-    if has_plugins {
-        if plugins_backup.exists() {
-            std::fs::remove_dir_all(&plugins_backup)?;
+    std::fs::create_dir_all(&backup_dir).context("Failed to create backup directory")?;
+
+    let backup_dirs = ["userdata", "plugins", "logs", "contracts", "contractSessions"];
+    for name in &backup_dirs {
+        let src = peacock_dir.join(name);
+        if src.is_dir() {
+            copy_dir_recursive(&src, &backup_dir.join(name))
+                .with_context(|| format!("Failed to back up {name}"))?;
         }
-        copy_dir_recursive(&plugins_dir, &plugins_backup).context("Failed to back up plugins")?;
+    }
+
+    let backup_files = ["options.ini"];
+    for name in &backup_files {
+        let src = peacock_dir.join(name);
+        if src.is_file() {
+            std::fs::copy(&src, backup_dir.join(name))
+                .with_context(|| format!("Failed to back up {name}"))?;
+        }
     }
 
     // Remove old Peacock directory
@@ -134,23 +137,27 @@ pub async fn install_or_update(
     // Clean up ZIP
     let _ = std::fs::remove_file(&zip_path);
 
-    // Restore userdata
-    if has_userdata && userdata_backup.exists() {
-        let restored_userdata = config.peacock_userdata_dir();
-        if restored_userdata.exists() {
-            std::fs::remove_dir_all(&restored_userdata)?;
+    // Restore backed-up data into the new Peacock directory
+    if backup_dir.exists() {
+        for name in &backup_dirs {
+            let src = backup_dir.join(name);
+            if src.is_dir() {
+                let dest = config.peacock_dir().join(name);
+                if dest.exists() {
+                    std::fs::remove_dir_all(&dest)?;
+                }
+                std::fs::rename(&src, &dest)
+                    .with_context(|| format!("Failed to restore {name}"))?;
+            }
         }
-        std::fs::rename(&userdata_backup, &restored_userdata)
-            .context("Failed to restore userdata")?;
-    }
-
-    // Restore plugins
-    if has_plugins && plugins_backup.exists() {
-        let restored_plugins = config.peacock_plugins_dir();
-        if restored_plugins.exists() {
-            std::fs::remove_dir_all(&restored_plugins)?;
+        for name in &backup_files {
+            let src = backup_dir.join(name);
+            if src.is_file() {
+                std::fs::copy(&src, config.peacock_dir().join(name))
+                    .with_context(|| format!("Failed to restore {name}"))?;
+            }
         }
-        std::fs::rename(&plugins_backup, &restored_plugins).context("Failed to restore plugins")?;
+        let _ = std::fs::remove_dir_all(&backup_dir);
     }
 
     // Update config
