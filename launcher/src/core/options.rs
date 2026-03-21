@@ -44,7 +44,11 @@ impl PeacockOption {
             OptionType::Boolean => self.cycle_value(),
             OptionType::Enum(variants) => {
                 let idx = variants.iter().position(|v| *v == self.value).unwrap_or(0);
-                let prev = if idx == 0 { variants.len() - 1 } else { idx - 1 };
+                let prev = if idx == 0 {
+                    variants.len() - 1
+                } else {
+                    idx - 1
+                };
                 self.value = variants[prev].to_string();
             }
         }
@@ -298,8 +302,7 @@ pub fn save_options(peacock_dir: &Path, options: &[PeacockOption]) -> Result<()>
 
     if ini_path.exists() {
         // Update existing file, preserving structure and comments
-        let content =
-            std::fs::read_to_string(&ini_path).context("Failed to read options.ini")?;
+        let content = std::fs::read_to_string(&ini_path).context("Failed to read options.ini")?;
 
         let mut output = String::new();
         let mut written_keys = HashSet::new();

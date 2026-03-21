@@ -37,6 +37,14 @@ pub struct ServiceStatus {
     pub enabled: bool,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct ServiceReplaceResult {
+    pub had_existing_service: bool,
+    pub replaced_legacy_service: bool,
+    pub restored_enabled: bool,
+    pub restored_running: bool,
+}
+
 /// Get the path to the systemd user service file.
 fn service_file_path() -> PathBuf {
     config_base_dir()
@@ -73,6 +81,12 @@ RestartSec=5
 WantedBy=default.target
 "#
     )
+}
+
+fn unit_file_looks_legacy(contents: &str) -> bool {
+    contents.contains("linux-steam-setup/start.sh")
+        || contents.contains("WorkingDirectory=%h/linux-steam-setup")
+        || contents.contains("WantedBy=multi-user.target")
 }
 
 /// Check the current status of the Peacock service.
@@ -131,9 +145,29 @@ fn daemon_reload() -> Result<()> {
     Ok(())
 }
 
+fn ensure_stopped_before_changes() -> Result<()> {
+    match get_active_state() {
+        ServiceState::Active | ServiceState::Failed => {
+            stop().context("Failed to stop Peacock service before updating it")?;
+
+            if get_active_state() == ServiceState::Active {
+                anyhow::bail!("Peacock service is still running after stop was requested");
+            }
+        }
+        ServiceState::Inactive | ServiceState::NotInstalled => {}
+    }
+
+    Ok(())
+}
+
 /// Install the systemd service (write unit file + daemon-reload).
 pub fn install(config: &Config) -> Result<()> {
     let path = service_file_path();
+
+    if path.exists() {
+        ensure_stopped_before_changes()?;
+    }
+
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).context("Failed to create systemd user directory")?;
     }
@@ -144,9 +178,48 @@ pub fn install(config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// Replace any existing service definition with the current launcher-managed one.
+///
+/// If a service already exists, its enabled/running state is restored after the
+/// new unit file is installed so migration remains seamless for existing users.
+pub fn replace(config: &Config) -> Result<ServiceReplaceResult> {
+    let path = service_file_path();
+    let had_existing_service = path.exists();
+    let was_enabled = had_existing_service && is_enabled();
+    let was_running = had_existing_service && get_active_state() == ServiceState::Active;
+    let replaced_legacy_service = std::fs::read_to_string(&path)
+        .map(|contents| unit_file_looks_legacy(&contents))
+        .unwrap_or(false);
+
+    if had_existing_service {
+        remove()?;
+    }
+
+    install(config)?;
+
+    let mut result = ServiceReplaceResult {
+        had_existing_service,
+        replaced_legacy_service,
+        restored_enabled: false,
+        restored_running: false,
+    };
+
+    if was_enabled {
+        enable()?;
+        result.restored_enabled = true;
+    }
+
+    if was_running {
+        start()?;
+        result.restored_running = true;
+    }
+
+    Ok(result)
+}
+
 /// Remove the systemd service (stop + disable + delete + daemon-reload).
 pub fn remove() -> Result<()> {
-    let _ = stop(); // best-effort stop
+    ensure_stopped_before_changes()?;
     let _ = disable(); // best-effort disable
 
     let path = service_file_path();
@@ -221,6 +294,33 @@ fn run_systemctl(args: &[&str]) -> Result<()> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[test]
+    fn legacy_unit_detection_matches_old_setup() {
+        let legacy_unit = r#"[Unit]
+Description=Peacock
+
+[Service]
+WorkingDirectory=%h/linux-steam-setup
+ExecStart=%h/linux-steam-setup/start.sh
+
+[Install]
+WantedBy=multi-user.target
+"#;
+
+        assert!(unit_file_looks_legacy(legacy_unit));
+    }
+
+    #[test]
+    fn legacy_unit_detection_ignores_current_launcher_unit() {
+        let config = Config {
+            install_dir: PathBuf::from("/home/user/.local/share/peacock-linux"),
+            port: 3000,
+            ..Config::default()
+        };
+
+        assert!(!unit_file_looks_legacy(&generate_unit_file(&config)));
+    }
 
     #[test]
     fn unit_file_generation() {

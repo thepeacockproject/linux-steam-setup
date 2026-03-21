@@ -94,7 +94,13 @@ pub async fn install_or_update(
     }
     std::fs::create_dir_all(&backup_dir).context("Failed to create backup directory")?;
 
-    let backup_dirs = ["userdata", "plugins", "logs", "contracts", "contractSessions"];
+    let backup_dirs = [
+        "userdata",
+        "plugins",
+        "logs",
+        "contracts",
+        "contractSessions",
+    ];
     for name in &backup_dirs {
         let src = peacock_dir.join(name);
         if src.is_dir() {

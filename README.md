@@ -31,6 +31,18 @@ A TUI (Terminal User Interface) application for managing [Peacock](https://thepe
 6. (Optional) Select **Enable on Boot** to have Peacock start automatically when you log in
 7. (Optional) Select **Manage ZHMModSDK** to install the SDK into your Hitman 3 directory
 
+## Migrating From The Legacy Setup
+
+If you were using the old shell-script setup, open the launcher and select **Migrate from old setup**.
+
+- The launcher copies your Peacock and Node.js files into the new managed location.
+- Any existing `peacock.service` is replaced with the launcher-managed service definition.
+- If the old service was enabled or running, that state is restored after migration.
+- Old `PeacockPatcher.exe` and `WineLaunch.bat` files are removed from detected game folders.
+- After migration, switch to **ZHMModSDK + OnlineTools** for patching. Do not keep using the old batch-file injection flow.
+
+See [MIGRATION.md](MIGRATION.md) for the full migration checklist.
+
 ## Navigation
 
 | Key | Action |
@@ -117,7 +129,7 @@ cargo appimage
 
 ## Legacy Setup
 
-The old shell-script-based setup files are preserved in the [`legacy/`](legacy/) directory for reference. The launcher includes a migration wizard to move an existing legacy install to the new location.
+The old shell-script-based setup files are preserved in the [`legacy/`](legacy/) directory for reference. The launcher includes a migration wizard to move an existing legacy install to the new location, and the recommended path is documented in [MIGRATION.md](MIGRATION.md).
 
 
 ## License
