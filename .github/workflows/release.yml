@@ -1,0 +1,52 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*"
+
+env:
+    CARGO_TERM_COLOR: always
+
+permissions:
+    contents: write
+
+jobs:
+    build:
+        name: Build AppImage
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Install Rust toolchain
+              uses: dtolnay/rust-toolchain@stable
+
+            - name: Cache Cargo
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: launcher
+
+            - name: Install system dependencies
+              run: sudo apt-get update && sudo apt-get install -y libfuse2
+
+            - name: Install cargo-appimage
+              run: cargo install cargo-appimage
+
+            - name: Build AppImage
+              working-directory: launcher
+              run: cargo appimage
+
+            - name: Rename artifact
+              run: |
+                  TAG="${GITHUB_REF_NAME}"
+                  mv launcher/target/appimage/peacock-launcher.AppImage \
+                     "peacock-launcher-${TAG}-x86_64.AppImage"
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  generate_release_notes: true
+                  make_latest: true
+                  files: peacock-launcher-*-x86_64.AppImage
