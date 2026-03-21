@@ -13,6 +13,7 @@ pub struct NodeStatus {
 }
 
 impl NodeStatus {
+    #[allow(dead_code)]
     pub fn update_needed(&self) -> bool {
         match (&self.installed_version, &self.required_version) {
             (Some(installed), Some(required)) => installed.trim() != required.trim(),
@@ -21,6 +22,7 @@ impl NodeStatus {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_installed(&self) -> bool {
         self.installed_version.is_some()
     }

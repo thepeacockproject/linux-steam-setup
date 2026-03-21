@@ -110,18 +110,17 @@ async fn run_app() -> anyhow::Result<()> {
         })?;
 
         // Handle input (with timeout for async progress updates)
-        if event::poll(std::time::Duration::from_millis(50))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    match app.screen {
-                        Screen::MainMenu => ui::main_menu::handle_key(&mut app, key),
-                        Screen::Install => ui::install::handle_key(&mut app, key),
-                        Screen::Service => ui::service::handle_key(&mut app, key),
-                        Screen::Sdk => ui::sdk::handle_key(&mut app, key),
-                        Screen::Settings => ui::settings::handle_key(&mut app, key),
-                        Screen::Migration => ui::migration::handle_key(&mut app, key),
-                    }
-                }
+        if event::poll(std::time::Duration::from_millis(50))?
+            && let event::Event::Key(key) = event::read()?
+            && key.kind == KeyEventKind::Press
+        {
+            match app.screen {
+                Screen::MainMenu => ui::main_menu::handle_key(&mut app, key),
+                Screen::Install => ui::install::handle_key(&mut app, key),
+                Screen::Service => ui::service::handle_key(&mut app, key),
+                Screen::Sdk => ui::sdk::handle_key(&mut app, key),
+                Screen::Settings => ui::settings::handle_key(&mut app, key),
+                Screen::Migration => ui::migration::handle_key(&mut app, key),
             }
         }
 

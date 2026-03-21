@@ -58,8 +58,6 @@ pub fn render(frame: &mut Frame, app: &App) {
     let (downloaded, total) = app.install_progress;
     let progress_ratio = if total > 0 {
         (downloaded as f64 / total as f64).min(1.0)
-    } else if app.task_running {
-        0.0
     } else {
         0.0
     };

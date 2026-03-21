@@ -110,6 +110,7 @@ impl Config {
     }
 
     /// Whether Node.js appears to be installed.
+    #[allow(dead_code)]
     pub fn is_node_installed(&self) -> bool {
         self.node_bin().exists()
     }

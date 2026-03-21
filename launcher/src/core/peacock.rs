@@ -29,6 +29,7 @@ pub struct PeacockStatus {
 }
 
 impl PeacockStatus {
+    #[allow(dead_code)]
     pub fn update_available(&self) -> bool {
         match (&self.installed_version, &self.latest_version) {
             (Some(installed), Some(latest)) => installed != latest,
@@ -37,6 +38,7 @@ impl PeacockStatus {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_installed(&self) -> bool {
         self.installed_version.is_some()
     }

@@ -28,6 +28,7 @@ struct GitHubAsset {
 }
 
 /// Query GitHub for the latest ZHMModSDK release tag (including pre-releases).
+#[allow(dead_code)]
 pub async fn fetch_latest_version(client: &Client) -> Result<String> {
     let releases: Vec<GitHubRelease> = fetch_json(client, GITHUB_RELEASES_URL).await?;
     let release = releases
@@ -38,6 +39,7 @@ pub async fn fetch_latest_version(client: &Client) -> Result<String> {
 }
 
 /// Check if ZHMModSDK is installed in a game install's Retail directory.
+#[allow(dead_code)]
 pub fn is_installed(game_install: &GameInstall) -> bool {
     let retail_dir = game_install.game_dir.join("Retail");
     // The SDK places dinput8.dll inside Retail/

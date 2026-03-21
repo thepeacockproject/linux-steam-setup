@@ -11,6 +11,7 @@ use ratatui::{
 };
 
 /// Render a centered status badge with color.
+#[allow(dead_code)]
 pub fn status_badge<'a>(label: &'a str, color: Color) -> Paragraph<'a> {
     Paragraph::new(label).style(Style::default().fg(color).bold())
 }

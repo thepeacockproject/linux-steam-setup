@@ -50,14 +50,12 @@ fn detect_legacy_peacock_version(peacock_dir: &Path) -> Option<String> {
     // Check if there's a version identifier in the Peacock directory
     // Peacock's chunk0.js or package.json might contain version info
     let package_json = peacock_dir.join("package.json");
-    if package_json.exists() {
-        if let Ok(contents) = std::fs::read_to_string(&package_json) {
-            if let Ok(data) = serde_json::from_str::<serde_json::Value>(&contents) {
-                if let Some(version) = data.get("version").and_then(|v| v.as_str()) {
-                    return Some(format!("v{version}"));
-                }
-            }
-        }
+    if package_json.exists()
+        && let Ok(contents) = std::fs::read_to_string(&package_json)
+        && let Ok(data) = serde_json::from_str::<serde_json::Value>(&contents)
+        && let Some(version) = data.get("version").and_then(|v| v.as_str())
+    {
+        return Some(format!("v{version}"));
     }
     None
 }
@@ -106,16 +104,13 @@ pub fn migrate(legacy: &LegacyInstall, config: &mut Config) -> Result<MigrationR
 
         // Detect node version from migrated binary
         let node_bin = dest.join("bin").join("node");
-        if node_bin.exists() {
-            if let Ok(output) = std::process::Command::new(&node_bin)
+        if node_bin.exists()
+            && let Ok(output) = std::process::Command::new(&node_bin)
                 .arg("--version")
                 .output()
-            {
-                if output.status.success() {
-                    config.node_version =
-                        Some(String::from_utf8_lossy(&output.stdout).trim().to_string());
-                }
-            }
+            && output.status.success()
+        {
+            config.node_version = Some(String::from_utf8_lossy(&output.stdout).trim().to_string());
         }
     }
 

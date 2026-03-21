@@ -26,11 +26,8 @@ pub struct GameInstall {
     pub game_dir: PathBuf,
     /// Which launcher this install belongs to
     pub launcher: Launcher,
-    /// Path to the Wine prefix for this install (contains user.reg, etc.)
-    pub wine_prefix: Option<PathBuf>,
 }
 
-const HITMAN_STEAM_APPID: &str = "1659040";
 const HITMAN_DIRNAME: &str = "HITMAN 3";
 
 /// Detect all Hitman 3 installations (Steam + Heroic), deduplicated by real path.
@@ -78,20 +75,9 @@ fn detect_steam() -> Vec<GameInstall> {
                 .join(HITMAN_DIRNAME);
 
             if game_dir.is_dir() {
-                let wine_prefix = lib_path
-                    .join("steamapps")
-                    .join("compatdata")
-                    .join(HITMAN_STEAM_APPID)
-                    .join("pfx");
-
                 results.push(GameInstall {
                     game_dir,
                     launcher: Launcher::Steam,
-                    wine_prefix: if wine_prefix.is_dir() {
-                        Some(wine_prefix)
-                    } else {
-                        None
-                    },
                 });
             }
         }
@@ -136,10 +122,10 @@ fn detect_heroic() -> Vec<GameInstall> {
 
         // Try Legendary library cache (Epic store)
         let legendary_lib = heroic_config_dir.join("store_cache/legendary_library.json");
-        if legendary_lib.exists() {
-            if let Some(install) = parse_legendary_library(&legendary_lib, &heroic_config_dir) {
-                results.push(install);
-            }
+        if legendary_lib.exists()
+            && let Some(install) = parse_legendary_library(&legendary_lib)
+        {
+            results.push(install);
         }
 
         // Try GamesConfig directory for per-game info
@@ -161,7 +147,7 @@ fn heroic_config_candidates() -> Vec<PathBuf> {
     ]
 }
 
-fn parse_legendary_library(lib_path: &Path, heroic_config_dir: &Path) -> Option<GameInstall> {
+fn parse_legendary_library(lib_path: &Path) -> Option<GameInstall> {
     let contents = std::fs::read_to_string(lib_path).ok()?;
     let data: serde_json::Value = serde_json::from_str(&contents).ok()?;
     let library = data.get("library")?.as_array()?;
@@ -181,41 +167,13 @@ fn parse_legendary_library(lib_path: &Path, heroic_config_dir: &Path) -> Option<
             continue;
         }
 
-        let app_name = game.get("app_name")?.as_str()?;
-
-        // Try to find Wine prefix from per-game config
-        let wine_prefix = find_heroic_wine_prefix(heroic_config_dir, app_name);
-
         return Some(GameInstall {
             game_dir,
             launcher: Launcher::Heroic,
-            wine_prefix,
         });
     }
 
     None
-}
-
-fn find_heroic_wine_prefix(heroic_config_dir: &Path, app_name: &str) -> Option<PathBuf> {
-    let config_path = heroic_config_dir
-        .join("GamesConfig")
-        .join(format!("{app_name}.json"));
-
-    let contents = std::fs::read_to_string(config_path).ok()?;
-    let data: serde_json::Value = serde_json::from_str(&contents).ok()?;
-
-    // Heroic stores winePrefix or wine_prefix
-    let prefix = data
-        .get(app_name)
-        .or_else(|| data.get("default"))
-        .and_then(|cfg| {
-            cfg.get("winePrefix")
-                .or_else(|| cfg.get("wine_prefix"))
-                .and_then(|v| v.as_str())
-                .map(PathBuf::from)
-        })?;
-
-    if prefix.is_dir() { Some(prefix) } else { None }
 }
 
 fn parse_heroic_games_config(games_config_dir: &Path) -> Vec<GameInstall> {
@@ -227,7 +185,7 @@ fn parse_heroic_games_config(games_config_dir: &Path) -> Vec<GameInstall> {
 
     for entry in entries.flatten() {
         let path = entry.path();
-        if !path.extension().is_some_and(|e| e == "json") {
+        if path.extension().is_none_or(|e| e != "json") {
             continue;
         }
 
