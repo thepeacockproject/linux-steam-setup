@@ -1,0 +1,48 @@
+[package]
+name = "peacock-launcher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# TUI
+crossterm = "0.29"
+ratatui = "0.30"
+
+# Async runtime & HTTP
+tokio = { version = "1", features = [
+	"rt-multi-thread",
+	"macros",
+	"sync",
+	"fs",
+	"process",
+	"time",
+] }
+reqwest = { version = "0.12", features = ["stream", "json"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Archive extraction
+zip = "2"
+flate2 = "1"
+tar = "0.4"
+
+# Utilities
+dirs = "6"
+semver = { version = "1", features = ["serde"] }
+regex = "1"
+anyhow = "1"
+rfd = "0.15"
+
+# Async stream support (for reqwest streaming)
+futures-util = "0.3"
+
+# Byte size formatting
+indicatif = "0.17"
+
+[package.metadata.appimage]
+icon = "assets/icon.png"
+assets = ["assets"]
+auto_link = false

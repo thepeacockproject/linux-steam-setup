@@ -1,0 +1,43 @@
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    check:
+        name: Build & Lint
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Install system dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libgtk-3-dev libwayland-dev libxkbcommon-dev
+
+            - name: Install Rust toolchain
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: clippy
+
+            - name: Cache Cargo
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: launcher
+
+            - name: Check
+              run: cargo check --manifest-path launcher/Cargo.toml
+
+            - name: Clippy
+              run: cargo clippy --manifest-path launcher/Cargo.toml -- -D warnings
+
+            - name: Test
+              run: cargo test --manifest-path launcher/Cargo.toml
