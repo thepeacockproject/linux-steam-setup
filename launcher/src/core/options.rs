@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 /// Type of value an option accepts.
@@ -302,6 +302,7 @@ pub fn save_options(peacock_dir: &Path, options: &[PeacockOption]) -> Result<()>
             std::fs::read_to_string(&ini_path).context("Failed to read options.ini")?;
 
         let mut output = String::new();
+        let mut written_keys = HashSet::new();
         for line in content.lines() {
             let trimmed = line.trim();
             if !trimmed.is_empty()
@@ -311,6 +312,7 @@ pub fn save_options(peacock_dir: &Path, options: &[PeacockOption]) -> Result<()>
             {
                 let key = key.trim();
                 if let Some(new_value) = value_map.get(key) {
+                    written_keys.insert(key);
                     output.push_str(&format!("{key}={new_value}"));
                     output.push('\n');
                     continue;
@@ -318,6 +320,12 @@ pub fn save_options(peacock_dir: &Path, options: &[PeacockOption]) -> Result<()>
             }
             output.push_str(line);
             output.push('\n');
+        }
+
+        for opt in options {
+            if !written_keys.contains(opt.key) {
+                output.push_str(&format!("{}={}\n", opt.key, opt.value));
+            }
         }
 
         std::fs::write(&ini_path, output).context("Failed to write options.ini")?;
@@ -339,4 +347,61 @@ pub fn save_options(peacock_dir: &Path, options: &[PeacockOption]) -> Result<()>
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_test_dir(test_name: &str) -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "peacock-launcher-{test_name}-{}-{unique}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn save_options_appends_known_keys_missing_from_existing_ini() {
+        let peacock_dir = temp_test_dir("options-save");
+        let ini_path = peacock_dir.join("options.ini");
+
+        fs::write(
+            &ini_path,
+            "; Existing config\n[peacock]\njokes=false\ncustomOption=keep-me\n",
+        )
+        .unwrap();
+
+        let mut options = load_options(&peacock_dir);
+        options
+            .iter_mut()
+            .find(|opt| opt.key == "jokes")
+            .unwrap()
+            .value = "true".into();
+        options
+            .iter_mut()
+            .find(|opt| opt.key == "experimentalHMR")
+            .unwrap()
+            .value = "true".into();
+
+        save_options(&peacock_dir, &options).unwrap();
+
+        let saved = fs::read_to_string(&ini_path).unwrap();
+        assert!(saved.contains("; Existing config"));
+        assert!(saved.contains("[peacock]"));
+        assert!(saved.contains("jokes=true"));
+        assert!(saved.contains("customOption=keep-me"));
+        assert!(saved.contains("experimentalHMR=true"));
+        assert!(saved.ends_with("experimentalHMR=true\n"));
+
+        fs::remove_dir_all(&peacock_dir).unwrap();
+    }
 }
