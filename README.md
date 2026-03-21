@@ -27,8 +27,9 @@ A TUI (Terminal User Interface) application for managing [Peacock](https://thepe
    ./peacock-launcher-*.AppImage # Or double-click the file in your file manager
    ```
 4. Select **Install / Update Peacock & Node** from the main menu
-5. Select **Manage Service** → **Install Service** → **Start Service**
-6. (Optional) Select **Manage ZHMModSDK** to install the SDK into your Hitman 3 directory
+5. Select **Manage Service** → **Install Service** → **Start Service** to have Peacock running in the background
+6. (Optional) Select **Enable on Boot** to have Peacock start automatically when you log in
+7. (Optional) Select **Manage ZHMModSDK** to install the SDK into your Hitman 3 directory
 
 ## Navigation
 
@@ -37,7 +38,6 @@ A TUI (Terminal User Interface) application for managing [Peacock](https://thepe
 | `↑` `↓` | Move between menu items |
 | `Enter` | Select / confirm |
 | `Esc` | Go back |
-| `q` | Quit (from main menu) |
 
 ## Connecting to Peacock
 
