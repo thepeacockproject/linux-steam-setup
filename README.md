@@ -4,6 +4,19 @@ A TUI (Terminal User Interface) application for managing [Peacock](https://thepe
 
 > **Note:** While the Peacock server officially supports Linux, the overall Linux/Proton setup is community-maintained. Join [our Discord](https://thepeacockproject.org/discord) for help.
 
+> [!IMPORTANT]
+> I want to acknowledge the use of AI-generated code for this version of the launcher.
+> 
+> As of 27/05/2026, The Peacock Team has taken the decision to fully ban the use of AI-generated code in our projects, and all contributions must now be human-made.
+> 
+> While this project was written before the ban was effective, I took the decision with the team support to deprecate this codebase and start planning on a fully human-made rewrite.
+> 
+> Due to personal circumstances, the rewrite will take some time to be started and completed but will be done with the intent of being compatible with the existing setup.
+> 
+> I want to reiterate my full support to the team and the decision of fully banning AI-generated code and by that acknowledgment, I want to make it clear that I'll put the effort necessary to do things right.
+> 
+> \- alex73630
+
 ## Features
 
 - **Install & Update Peacock** — downloads the latest release, preserves your `userdata/` across updates
