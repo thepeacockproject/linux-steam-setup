@@ -1,10 +1,13 @@
 use anyhow::{Context, Result};
 use std::fmt;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 use super::config::{Config, config_base_dir};
 
 const SERVICE_NAME: &str = "peacock.service";
+const STOP_TIMEOUT: Duration = Duration::from_secs(30);
+const STOP_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Current state of the systemd user service.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,21 +110,33 @@ pub fn status() -> ServiceStatus {
 }
 
 fn get_active_state() -> ServiceState {
-    let output = std::process::Command::new("systemctl")
-        .args(["--user", "is-active", "peacock"])
-        .output();
-
-    match output {
-        Ok(out) => {
-            let stdout = String::from_utf8_lossy(&out.stdout);
-            match stdout.trim() {
-                "active" => ServiceState::Active,
-                "failed" => ServiceState::Failed,
-                _ => ServiceState::Inactive,
-            }
-        }
+    match active_state_name() {
+        Ok(state) => match state.as_str() {
+            "active" | "activating" | "reloading" => ServiceState::Active,
+            "failed" => ServiceState::Failed,
+            _ => ServiceState::Inactive,
+        },
         Err(_) => ServiceState::Inactive,
     }
+}
+
+fn active_state_name() -> Result<String> {
+    let output = std::process::Command::new("systemctl")
+        .args(["--user", "is-active", "peacock"])
+        .output()
+        .context("Failed to check whether the Peacock service is running")?;
+    let state = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+
+    if state.is_empty() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("Could not determine Peacock service state: {stderr}");
+    }
+
+    Ok(state)
+}
+
+fn is_fully_stopped(state: &str) -> bool {
+    matches!(state, "inactive" | "failed" | "unknown")
 }
 
 fn is_enabled() -> bool {
@@ -146,18 +161,44 @@ fn daemon_reload() -> Result<()> {
 }
 
 fn ensure_stopped_before_changes() -> Result<()> {
-    match get_active_state() {
-        ServiceState::Active | ServiceState::Failed => {
-            stop().context("Failed to stop Peacock service before updating it")?;
+    stop_if_running_and_wait()
+}
 
-            if get_active_state() == ServiceState::Active {
-                anyhow::bail!("Peacock service is still running after stop was requested");
-            }
-        }
-        ServiceState::Inactive | ServiceState::NotInstalled => {}
+/// Stop the Peacock service if it is running and wait until it is fully off.
+///
+/// The timeout prevents an update from changing files while systemd is still
+/// stopping Peacock. A timeout or state-query failure aborts the caller's update.
+pub fn stop_if_running_and_wait() -> Result<()> {
+    if !service_file_path().exists() {
+        return Ok(());
     }
 
-    Ok(())
+    let state = active_state_name()?;
+    if is_fully_stopped(&state) {
+        return Ok(());
+    }
+
+    if state != "deactivating" {
+        run_systemctl(&["--no-block", "stop", "peacock"])
+            .context("Failed to stop Peacock service before updating")?;
+    }
+
+    let started = Instant::now();
+    loop {
+        let state = active_state_name()?;
+        if is_fully_stopped(&state) {
+            return Ok(());
+        }
+
+        if started.elapsed() >= STOP_TIMEOUT {
+            anyhow::bail!(
+                "Peacock service did not stop within {} seconds (state: {state})",
+                STOP_TIMEOUT.as_secs()
+            );
+        }
+
+        std::thread::sleep(STOP_POLL_INTERVAL);
+    }
 }
 
 /// Install the systemd service (write unit file + daemon-reload).
@@ -335,5 +376,15 @@ WantedBy=multi-user.target
         assert!(unit.contains("Environment=PORT=3000"));
         assert!(unit.contains("ExecStart=/home/user/.local/share/peacock-linux/node/bin/node"));
         assert!(unit.contains("WantedBy=default.target"));
+    }
+
+    #[test]
+    fn fully_stopped_states_exclude_transitional_states() {
+        assert!(is_fully_stopped("inactive"));
+        assert!(is_fully_stopped("failed"));
+        assert!(is_fully_stopped("unknown"));
+        assert!(!is_fully_stopped("active"));
+        assert!(!is_fully_stopped("activating"));
+        assert!(!is_fully_stopped("deactivating"));
     }
 }

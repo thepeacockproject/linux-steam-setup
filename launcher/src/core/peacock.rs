@@ -74,6 +74,9 @@ pub async fn install_or_update(
     config: &mut Config,
     on_progress: Option<ProgressFn>,
 ) -> Result<String> {
+    super::service::stop_if_running_and_wait()
+        .context("Cannot update Peacock while its service is running")?;
+
     let release: GitHubRelease = fetch_json(client, GITHUB_RELEASES_URL)
         .await
         .context("Failed to fetch latest Peacock release")?;
@@ -88,7 +91,8 @@ pub async fn install_or_update(
     std::fs::create_dir_all(install_dir).context("Failed to create install directory")?;
 
     // Back up user data into a single staging directory
-    let backup_dir = install_dir.join(".peacock_backup");
+    let date = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S");
+    let backup_dir = install_dir.join(format!(".peacock_backup_{date}"));
     if backup_dir.exists() {
         std::fs::remove_dir_all(&backup_dir)?;
     }
@@ -143,7 +147,7 @@ pub async fn install_or_update(
     // Clean up ZIP
     let _ = std::fs::remove_file(&zip_path);
 
-    // Restore backed-up data into the new Peacock directory
+    // Copy backed-up data into the new Peacock directory
     if backup_dir.exists() {
         for name in &backup_dirs {
             let src = backup_dir.join(name);
@@ -152,8 +156,7 @@ pub async fn install_or_update(
                 if dest.exists() {
                     std::fs::remove_dir_all(&dest)?;
                 }
-                std::fs::rename(&src, &dest)
-                    .with_context(|| format!("Failed to restore {name}"))?;
+                std::fs::copy(&src, &dest).with_context(|| format!("Failed to restore {name}"))?;
             }
         }
         for name in &backup_files {
@@ -163,7 +166,6 @@ pub async fn install_or_update(
                     .with_context(|| format!("Failed to restore {name}"))?;
             }
         }
-        let _ = std::fs::remove_dir_all(&backup_dir);
     }
 
     // Update config

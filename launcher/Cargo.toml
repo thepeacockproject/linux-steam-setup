@@ -2,6 +2,7 @@
 name = "peacock-launcher"
 version = "0.0.0"
 edition = "2024"
+rust-version = "1.96.0"
 
 [dependencies]
 # TUI
@@ -41,6 +42,7 @@ futures-util = "0.3"
 
 # Byte size formatting
 indicatif = "0.17"
+chrono = "0.4.45"
 
 [package.metadata.appimage]
 icon = "assets/icon.png"
