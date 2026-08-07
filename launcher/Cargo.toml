@@ -44,6 +44,9 @@ futures-util = "0.3"
 indicatif = "0.17"
 chrono = "0.4.45"
 
+[dev-dependencies]
+tempfile = "3"
+
 [package.metadata.appimage]
 icon = "assets/icon.png"
 assets = ["assets"]

@@ -156,7 +156,8 @@ pub async fn install_or_update(
                 if dest.exists() {
                     std::fs::remove_dir_all(&dest)?;
                 }
-                std::fs::copy(&src, &dest).with_context(|| format!("Failed to restore {name}"))?;
+                copy_dir_recursive(&src, &dest)
+                    .with_context(|| format!("Failed to restore {name}"))?;
             }
         }
         for name in &backup_files {
@@ -254,4 +255,27 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn copy_dir_recursive_restores_nested_user_profiles() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("backup").join("userdata");
+        let profile = source.join("UserProfiles").join("local");
+        let destination = temp.path().join("Peacock").join("userdata");
+
+        std::fs::create_dir_all(&profile).unwrap();
+        std::fs::write(profile.join("profile.json"), br#"{"name":"Agent 47"}"#).unwrap();
+
+        copy_dir_recursive(&source, &destination).unwrap();
+
+        assert_eq!(
+            std::fs::read(destination.join("UserProfiles/local/profile.json")).unwrap(),
+            br#"{"name":"Agent 47"}"#
+        );
+    }
 }
